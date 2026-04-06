@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - AI Interview Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dashboard-body">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="/dashboard" class="sidebar-logo" style="text-decoration: none; color: inherit;">
+                <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18" stroke="#6366F1" stroke-width="2"/>
+                    <path d="M20 10v20M10 20h20" stroke="#14B8A6" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="20" cy="20" r="3" fill="#6366F1"/>
+                </svg>
+                <span class="sidebar-brand">InterviewAI</span>
+            </a>
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M4 6h16M4 12h16M4 18h16" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+
+        <nav class="sidebar-menu">
+            <a href="/dashboard" class="sidebar-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="/dashboard" class="sidebar-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Start Interview</span>
+            </a>
+            <a href="/history" class="sidebar-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>History</span>
+            </a>
+            <a href="/analytics" class="sidebar-item active">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <polyline points="19 12 12 19 5 12"></polyline>
+                </svg>
+                <span>Analytics</span>
+            </a>
+            <a href="/settings" class="sidebar-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <path d="M12 1v6m0 6v6"></path>
+                    <path d="M4.22 4.22l4.24 4.24m2.12 2.12l4.24 4.24"></path>
+                    <path d="M1 12h6m6 0h6"></path>
+                    <path d="M4.22 19.78l4.24-4.24m2.12-2.12l4.24-4.24"></path>
+                    <path d="M12 19v6"></path>
+                    <path d="M19.78 19.78l-4.24-4.24m-2.12-2.12l-4.24-4.24"></path>
+                    <path d="M19 12h6"></path>
+                    <path d="M19.78 4.22l-4.24 4.24m-2.12 2.12l-4.24 4.24"></path>
+                </svg>
+                <span>Settings</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="/logout" class="sidebar-item logout">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1>Analytics Dashboard 📊</h1>
+                <p class="header-subtitle">Track your performance and improvement over time</p>
+            </div>
+            <div class="header-stats">
+                <div class="stat-chip">
+                    <span class="stat-label">Total Interviews</span>
+                    <span class="stat-value" id="totalCount">0</span>
+                </div>
+                <div class="stat-chip">
+                    <span class="stat-label">Avg Score</span>
+                    <span class="stat-value" id="avgScore">0%</span>
+                </div>
+                <div class="stat-chip">
+                    <span class="stat-label">Best Score</span>
+                    <span class="stat-value" id="bestScore">0%</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Key Metrics Grid -->
+            <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="results-card" style="transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 20px 40px rgba(99, 102, 241, 0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'">
+                    <h3>Performance Overview</h3>
+                    <div style="margin-top: 1rem;">
+                        <div style="margin-bottom: 1.2rem; padding: 0.8rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), transparent); border-radius: 8px; border-left: 3px solid #6366F1;">
+                            <small style="color: var(--text-muted);">👤 HR</small>
+                            <span style="display: block; font-size: 1.8rem; font-weight: 700; color: #6366F1; margin-top: 0.3rem;">
+                                <span id="hrScore" class="animated-counter">-</span>%
+                            </span>
+                        </div>
+                        <div style="margin-bottom: 1.2rem; padding: 0.8rem; background: linear-gradient(135deg, rgba(20, 184, 166, 0.1), transparent); border-radius: 8px; border-left: 3px solid #14B8A6;">
+                            <small style="color: var(--text-muted);">⚙️ Technical</small>
+                            <span style="display: block; font-size: 1.8rem; font-weight: 700; color: #14B8A6; margin-top: 0.3rem;">
+                                <span id="technicalScore" class="animated-counter">-</span>%
+                            </span>
+                        </div>
+                        <div style="padding: 0.8rem; background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), transparent); border-radius: 8px; border-left: 3px solid #EC4899;">
+                            <small style="color: var(--text-muted);">📱 Product</small>
+                            <span style="display: block; font-size: 1.8rem; font-weight: 700; color: #EC4899; margin-top: 0.3rem;">
+                                <span id="productScore" class="animated-counter">-</span>%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-card" style="transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 20px 40px rgba(99, 102, 241, 0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'">
+                    <h3>Scoring Breakdown</h3>
+                    <div style="margin-top: 1rem; font-size: 0.9rem;">
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                                <span>📊 Depth</span><span id="depthScore" style="font-weight: 600;">-</span>
+                            </div>
+                            <div style="width: 100%; height: 6px; background: rgba(99, 102, 241, 0.1); border-radius: 3px; overflow: hidden;">
+                                <div id="depthBar" class="progress-bar" style="background: linear-gradient(90deg, #6366F1, #8b5cf6); height: 100%; width: 0%; transition: width 0.6s ease;"></div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                                <span>💬 Clarity</span><span id="clarityScore" style="font-weight: 600;">-</span>
+                            </div>
+                            <div style="width: 100%; height: 6px; background: rgba(99, 102, 241, 0.1); border-radius: 3px; overflow: hidden;">
+                                <div id="clarityBar" class="progress-bar" style="background: linear-gradient(90deg, #14B8A6, #06B6D4); height: 100%; width: 0%; transition: width 0.6s ease;"></div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                                <span>🔧 Technical</span><span id="technicalBreakdownScore" style="font-weight: 600;">-</span>
+                            </div>
+                            <div style="width: 100%; height: 6px; background: rgba(99, 102, 241, 0.1); border-radius: 3px; overflow: hidden;">
+                                <div id="technicalBar" class="progress-bar" style="background: linear-gradient(90deg, #F59E0B, #FBBF24); height: 100%; width: 0%; transition: width 0.6s ease;"></div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                                <span>🧠 Reasoning</span><span id="reasoningScore" style="font-weight: 600;">-</span>
+                            </div>
+                            <div style="width: 100%; height: 6px; background: rgba(99, 102, 241, 0.1); border-radius: 3px; overflow: hidden;">
+                                <div id="reasoningBar" class="progress-bar" style="background: linear-gradient(90deg, #EC4899, #F472B6); height: 100%; width: 0%; transition: width 0.6s ease;"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                                <span>⚡ Confidence</span><span id="confidenceScore" style="font-weight: 600;">-</span>
+                            </div>
+                            <div style="width: 100%; height: 6px; background: rgba(99, 102, 241, 0.1); border-radius: 3px; overflow: hidden;">
+                                <div id="confidenceBar" class="progress-bar" style="background: linear-gradient(90deg, #10B981, #34D399); height: 100%; width: 0%; transition: width 0.6s ease;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-card" style="transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 20px 40px rgba(99, 102, 241, 0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'">
+                    <h3>Interview Stats</h3>
+                    <div style="margin-top: 1rem;">
+                        <div style="margin-bottom: 1rem; padding: 0.8rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), transparent); border-radius: 8px;">
+                            <small style="color: var(--text-muted);">❓ Total Questions</small>
+                            <span style="display: block; font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #6366F1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-top: 0.3rem;">
+                                <span id="totalQuestions" class="animated-counter">0</span>
+                            </span>
+                        </div>
+                        <div style="padding: 0.8rem; background: linear-gradient(135deg, rgba(20, 184, 166, 0.1), transparent); border-radius: 8px;">
+                            <small style="color: var(--text-muted);">📈 Avg per Interview</small>
+                            <span style="display: block; font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #14B8A6, #06B6D4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-top: 0.3rem;">
+                                <span id="avgQuestions" class="animated-counter">0</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts -->
+            <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
+                <div class="results-card" style="min-height: 400px;">
+                    <h3>Score Distribution</h3>
+                    <canvas id="scoreDistributionChart" style="margin-top: 1rem;"></canvas>
+                </div>
+
+                <div class="results-card" style="min-height: 400px;">
+                    <h3>By Interview Type</h3>
+                    <canvas id="interviewTypeChart" style="margin-top: 1rem;"></canvas>
+                </div>
+
+                <div class="results-card" style="grid-column: 1 / -1; min-height: 400px;">
+                    <h3>Scoring Dimensions Performance</h3>
+                    <canvas id="scoringDimensionsChart" style="margin-top: 1rem;"></canvas>
+                </div>
+            </section>
+
+            <!-- Achievement Badges Section -->
+            <section class="results-card" style="margin-top: 2rem;" id="achievementSection" style="display: none;">
+                <h3>🏆 Achievements</h3>
+                <div id="achievementContainer" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem;">
+                </div>
+            </section>
+
+            <!-- Improvement Suggestions -->
+            <section class="results-card" style="margin-top: 2rem;">
+                <h3>💡 Recommendations</h3>
+                <div id="recommendationsContainer" style="margin-top: 1rem;">
+                    <p style="color: var(--text-muted);">📝 Complete at least one interview to get personalized recommendations.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Background Effects -->
+    <div class="background-grid"></div>
+    <div class="gradient-orb gradient-orb-1"></div>
+    <div class="gradient-orb gradient-orb-2"></div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Analytics data passed from server
+        const analyticsData = {{ stats | tojson | safe }};
+
+        // Animated counter function
+        function animateCounter(element, target, duration = 1500) {
+            let current = 0;
+            target = parseFloat(target);
+            const increment = target / (duration / 16);
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target.toFixed(target % 1 !== 0 ? 1 : 0);
+                    clearInterval(timer);
+                } else {
+                    element.textContent = current.toFixed(target % 1 !== 0 ? 1 : 0);
+                }
+            }, 16);
+        }
+
+        // Initialize analytics dashboard
+        function initializeAnalytics() {
+            // Update header stats with animation
+            animateCounter(document.getElementById('totalCount'), analyticsData.total_interviews || 0, 1000);
+            animateCounter(document.getElementById('avgScore'), (analyticsData.average_score || 0).toFixed(1), 1200);
+            animateCounter(document.getElementById('bestScore'), (analyticsData.best_score || 0).toFixed(1), 1200);
+            
+            // Update performance by type
+            const typeStats = analyticsData.type_stats || {};
+            animateCounter(document.getElementById('hrScore'), typeStats.hr?.avg || 0, 1500);
+            animateCounter(document.getElementById('technicalScore'), typeStats.technical?.avg || 0, 1500);
+            animateCounter(document.getElementById('productScore'), typeStats.product?.avg || 0, 1500);
+            
+            // Update scoring breakdown
+            const breakdown = analyticsData.scoring_breakdown || {};
+            const depthVal = breakdown.depth || 0;
+            const clarityVal = breakdown.clarity || 0;
+            const technicalVal = breakdown.technical || 0;
+            const reasoningVal = breakdown.reasoning || 0;
+            const confidenceVal = breakdown.confidence || 0;
+            
+            animateCounter(document.getElementById('depthScore'), depthVal.toFixed(1), 1500);
+            animateCounter(document.getElementById('clarityScore'), clarityVal.toFixed(1), 1500);
+            animateCounter(document.getElementById('technicalBreakdownScore'), technicalVal.toFixed(1), 1500);
+            animateCounter(document.getElementById('reasoningScore'), reasoningVal.toFixed(1), 1500);
+            animateCounter(document.getElementById('confidenceScore'), confidenceVal.toFixed(1), 1500);
+            
+            // Animate progress bars
+            setTimeout(() => {
+                document.getElementById('depthBar').style.width = (depthVal / 100 * 100) + '%';
+                document.getElementById('clarityBar').style.width = (clarityVal / 100 * 100) + '%';
+                document.getElementById('technicalBar').style.width = (technicalVal / 100 * 100) + '%';
+                document.getElementById('reasoningBar').style.width = (reasoningVal / 100 * 100) + '%';
+                document.getElementById('confidenceBar').style.width = (confidenceVal / 100 * 100) + '%';
+            }, 100);
+            
+            // Update interview stats
+            animateCounter(document.getElementById('totalQuestions'), analyticsData.total_questions || 0, 1200);
+            animateCounter(document.getElementById('avgQuestions'), 
+                (analyticsData.total_interviews > 0 ? (analyticsData.total_questions / analyticsData.total_interviews).toFixed(1) : 0), 1200);
+            
+            // Create charts
+            createCharts();
+            generateRecommendations(breakdown);
+        }
+
+        function createCharts() {
+            const chartConfig = {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        labels: { color: '#e5e7eb' }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(99, 102, 241, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(99, 102, 241, 0.1)' }
+                    }
+                }
+            };
+
+            // Score Distribution Chart
+            const scoreCtx = document.getElementById('scoreDistributionChart').getContext('2d');
+            new Chart(scoreCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['0-20', '20-40', '40-60', '60-80', '80-100'],
+                    datasets: [{
+                        label: 'Number of Interviews',
+                        data: analyticsData.score_distribution || [0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                        borderColor: '#6366F1',
+                        borderWidth: 1
+                    }]
+                },
+                options: chartConfig
+            });
+
+            // Interview Type Chart
+            const typeCtx = document.getElementById('interviewTypeChart').getContext('2d');
+            const typeLabels = Object.keys(analyticsData.type_stats || {});
+            const typeData = Object.values(analyticsData.type_stats || {}).map(t => t.total);
+            
+            new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: typeLabels.length > 0 ? typeLabels.map(t => t.toUpperCase()) : ['No Data'],
+                    datasets: [{
+                        data: typeData.length > 0 ? typeData : [0],
+                        backgroundColor: typeLabels.length > 0 
+                            ? ['#6366F1', '#14B8A6', '#EC4899'].slice(0, typeLabels.length)
+                            : ['#666'],
+                        borderColor: '#1a1a2e',
+                        borderWidth: 2
+                    }]
+                },
+                options: chartConfig
+            });
+
+            // Scoring Dimensions Chart
+            const dimensionsCtx = document.getElementById('scoringDimensionsChart').getContext('2d');
+            const breakdown = analyticsData.scoring_breakdown || {depth: 0, clarity: 0, technical: 0, reasoning: 0, confidence: 0};
+            
+            new Chart(dimensionsCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Depth', 'Clarity', 'Technical', 'Reasoning', 'Confidence'],
+                    datasets: [{
+                        label: 'Your Scores',
+                        data: [
+                            breakdown.depth || 0,
+                            breakdown.clarity || 0,
+                            breakdown.technical || 0,
+                            breakdown.reasoning || 0,
+                            breakdown.confidence || 0
+                        ],
+                        borderColor: '#6366F1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#6366F1'
+                    }]
+                },
+                options: {
+                    ...chartConfig,
+                    scales: {
+                        r: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(99, 102, 241, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function generateRecommendations(breakdown) {
+            const recommendations = [];
+            const icons = {
+                depth: '📊',
+                clarity: '💬',
+                technical: '🔧',
+                reasoning: '🧠',
+                confidence: '⚡'
+            };
+
+            if (breakdown.depth < 70) recommendations.push({icon: icons.depth, text: 'Focus on providing deeper answers with more detail and examples', color: '#6366F1'});
+            if (breakdown.clarity < 70) recommendations.push({icon: icons.clarity, text: 'Work on clarity - structure your responses more concisely', color: '#14B8A6'});
+            if (breakdown.technical < 70) recommendations.push({icon: icons.technical, text: 'Improve technical knowledge in your weaker areas', color: '#F59E0B'});
+            if (breakdown.reasoning < 70) recommendations.push({icon: icons.reasoning, text: 'Strengthen your reasoning and problem-solving approach', color: '#EC4899'});
+            if (breakdown.confidence < 70) recommendations.push({icon: icons.confidence, text: 'Practice to increase confidence in your responses', color: '#10B981'});
+
+            const container = document.getElementById('recommendationsContainer');
+            if (recommendations.length === 0 || analyticsData.total_interviews === 0) {
+                container.innerHTML = analyticsData.total_interviews === 0
+                    ? '<p style="color: var(--text-muted); font-size: 1.05rem;">📝 Complete your first interview to see personalized recommendations and analytics.</p>'
+                    : '<div style="text-align: center; padding: 2rem;"><p style="color: #14B8A6; font-size: 1.3rem; font-weight: 600;">🌟 Excellent Performance!</p><p style="color: var(--text-muted); margin-top: 0.5rem;">Keep maintaining these standards and continue improving.</p></div>';
+            } else {
+                container.innerHTML = recommendations.map(r => `
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(${hexToRgb(r.color)}, 0.1), transparent); border-left: 3px solid ${r.color}; border-radius: 6px; transition: all 0.3s ease;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">
+                        <span style="font-size: 1.5rem;">${r.icon}</span>
+                        <span style="color: #e5e7eb;">${r.text}</span>
+                    </div>
+                `).join('');
+            }
+            
+            generateAchievements(breakdown);
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '99, 102, 241';
+        }
+
+        function generateAchievements(breakdown) {
+            const achievements = [];
+            const achievementSection = document.getElementById('achievementSection');
+            
+            if (breakdown.depth >= 80) achievements.push({emoji: '🎯', label: 'Deep Thinker', color: '#6366F1'});
+            if (breakdown.clarity >= 80) achievements.push({emoji: '💎', label: 'Crystal Clear', color: '#14B8A6'});
+            if (breakdown.technical >= 80) achievements.push({emoji: '⚙️', label: 'Tech Expert', color: '#F59E0B'});
+            if (breakdown.reasoning >= 80) achievements.push({emoji: '🧩', label: 'Logic Master', color: '#EC4899'});
+            if (breakdown.confidence >= 80) achievements.push({emoji: '⭐', label: 'Confident', color: '#10B981'});
+            if (analyticsData.average_score >= 80) achievements.push({emoji: '🏆', label: 'Top Performer', color: '#F97316'});
+            
+            if (achievements.length > 0) {
+                achievementSection.style.display = 'block';
+                const container = document.getElementById('achievementContainer');
+                container.innerHTML = achievements.map(a => `
+                    <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, rgba(${hexToRgb(a.color)}, 0.2), transparent); border-radius: 8px; border: 1px solid ${a.color}; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='scale(1.05)';" onmouseout="this.style.transform='scale(1)';">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">${a.emoji}</div>
+                        <div style="font-size: 0.85rem; color: ${a.color}; font-weight: 600;">${a.label}</div>
+                    </div>
+                `).join('');
+            } else {
+                achievementSection.style.display = 'none';
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeAnalytics);
+
+        // Sidebar toggle
+        document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('collapsed');
+            document.querySelector('.dashboard-main').classList.toggle('expanded');
+        });
+    </script>
+</body>
+</html>

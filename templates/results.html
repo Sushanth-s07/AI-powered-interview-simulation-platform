@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results - AI Interview Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body class="results-body">
+    <div class="results-container">
+        <!-- Header -->
+        <header class="results-header">
+            <div class="header-content">
+                <h1>Interview Results</h1>
+                <p>Comprehensive analysis of your interview performance</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="window.print()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Print
+                </button>
+                <a href="/dashboard" class="btn btn-primary">Back to Dashboard</a>
+            </div>
+        </header>
+
+        <!-- Main Results -->
+        <div class="results-main">
+            <!-- Overall Score Card -->
+            <section class="results-card large-card">
+                <h2>Overall Performance</h2>
+                <div class="score-ring-large">
+                    <svg viewBox="0 0 200 200">
+                        <circle cx="100" cy="100" r="90" class="score-ring-bg"/>
+                        <circle cx="100" cy="100" r="90" class="score-ring-fill" id="overallScoreFill"/>
+                    </svg>
+                    <div class="score-center">
+                        <span class="score-number" id="overallScore">0</span>
+                        <span class="score-percent">%</span>
+                    </div>
+                </div>
+                <div class="score-interpretation">
+                    <p id="scoreInterpretation">Loading...</p>
+                </div>
+            </section>
+
+            <!-- Key Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6366F1">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </div>
+                    <h3>Questions</h3>
+                    <p class="metric-value" id="totalQuestions">0</p>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#14B8A6">
+                            <line x1="12" y1="2" x2="12" y2="22"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                    </div>
+                    <h3>Average Score</h3>
+                    <p class="metric-value" id="averageScore">0%</p>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6366F1">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            <polyline points="17 6 23 6 23 12"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Performance</h3>
+                    <p class="metric-value" id="performancePercentage">0%</p>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#14B8A6">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <path d="M12 1v6m0 6v6"></path>
+                            <path d="M4.22 4.22l4.24 4.24m2.12 2.12l4.24 4.24"></path>
+                        </svg>
+                    </div>
+                    <h3>Best Category</h3>
+                    <p class="metric-value" id="bestCategory">--</p>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <!-- Skill Breakdown -->
+                <section class="results-card chart-card">
+                    <h2>Skill Breakdown</h2>
+                    <div class="chart-container">
+                        <canvas id="skillChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Question Performance -->
+                <section class="results-card chart-card">
+                    <h2>Question Performance</h2>
+                    <div class="chart-container">
+                        <canvas id="questionChart"></canvas>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Evaluation Bands -->
+            <section class="results-card">
+                <h2>Detailed Evaluation</h2>
+                <div class="evaluation-bands">
+                    <div class="band-item">
+                        <div class="band-label">Communication & Clarity</div>
+                        <div class="band-bar">
+                            <div class="band-fill" id="clarityCommunication"></div>
+                        </div>
+                        <span class="band-value" id="clarityCommunicationValue">0%</span>
+                    </div>
+
+                    <div class="band-item">
+                        <div class="band-label">Technical Knowledge</div>
+                        <div class="band-bar">
+                            <div class="band-fill technical-fill" id="technicalKnowledge"></div>
+                        </div>
+                        <span class="band-value" id="technicalKnowledgeValue">0%</span>
+                    </div>
+
+                    <div class="band-item">
+                        <div class="band-label">Problem Solving</div>
+                        <div class="band-bar">
+                            <div class="band-fill problem-fill" id="problemSolving"></div>
+                        </div>
+                        <span class="band-value" id="problemSolvingValue">0%</span>
+                    </div>
+
+                    <div class="band-item">
+                        <div class="band-label">Depth & Completeness</div>
+                        <div class="band-bar">
+                            <div class="band-fill depth-fill" id="depthCompleteness"></div>
+                        </div>
+                        <span class="band-value" id="depthCompletenessValue">0%</span>
+                    </div>
+
+                    <div class="band-item">
+                        <div class="band-label">Confidence</div>
+                        <div class="band-bar">
+                            <div class="band-fill confidence-fill" id="confidenceLevel"></div>
+                        </div>
+                        <span class="band-value" id="confidenceLevelValue">0%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Strengths & Weaknesses -->
+            <div class="insights-grid">
+                <section class="results-card">
+                    <h2>✨ Your Strengths</h2>
+                    <ul class="insights-list strengths-list" id="strengthsList">
+                        <li class="skeleton"></li>
+                        <li class="skeleton"></li>
+                        <li class="skeleton"></li>
+                    </ul>
+                </section>
+
+                <section class="results-card">
+                    <h2>📈 Areas for Improvement</h2>
+                    <ul class="insights-list" id="improvementsList">
+                        <li class="skeleton"></li>
+                        <li class="skeleton"></li>
+                        <li class="skeleton"></li>
+                    </ul>
+                </section>
+            </div>
+
+            <!-- AI Suggestions -->
+            <section class="results-card">
+                <h2>💡 AI Recommendations</h2>
+                <div class="suggestions-container" id="suggestionsContainer">
+                    <div class="suggestion-item skeleton"></div>
+                    <div class="suggestion-item skeleton"></div>
+                    <div class="suggestion-item skeleton"></div>
+                    <div class="suggestion-item skeleton"></div>
+                </div>
+            </section>
+
+            <!-- Answer Review -->
+            <section class="results-card">
+                <h2>Interview Transcript</h2>
+                <div class="transcript-container" id="transcriptContainer">
+                    <!-- Questions and answers will be populated here -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="results-footer">
+            <div class="footer-content">
+                <p>Ready for another interview?</p>
+                <a href="/dashboard" class="btn btn-primary">Start New Interview</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Background Effects -->
+    <div class="background-grid"></div>
+    <div class="gradient-orb gradient-orb-1"></div>
+    <div class="gradient-orb gradient-orb-2"></div>
+
+    <script>
+        const interviewId = {{ interview_id }};
+        let chartsInitialized = false;
+        let skillChart;
+        let questionChart;
+
+        // Load results
+        async function loadResults() {
+            try {
+                const response = await fetch(`/api/interview-results/${interviewId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    populateResults(data.analytics, data.answers);
+                }
+            } catch (error) {
+                console.error('Error loading results:', error);
+            }
+        }
+
+        function populateResults(analytics, answers) {
+            // Overall score
+            const overallScore = Math.round(analytics.overall_score);
+            document.getElementById('overallScore').textContent = overallScore;
+            document.getElementById('overallScoreFill').style.strokeDashoffset = 
+                (1 - (overallScore / 100)) * 565.48;
+
+            // Score interpretation
+            let interpretation = 'Outstanding performance!';
+            if (overallScore < 40) interpretation = 'Keep practicing to improve your skills.';
+            else if (overallScore < 60) interpretation = 'Good effort! There\'s room for improvement.';
+            else if (overallScore < 80) interpretation = 'Well done! You\'re on the right track.';
+            else if (overallScore < 90) interpretation = 'Excellent performance!';
+            document.getElementById('scoreInterpretation').textContent = interpretation;
+
+            // Metrics
+            document.getElementById('totalQuestions').textContent = analytics.total_questions;
+            document.getElementById('averageScore').textContent = Math.round(analytics.average_score) + '%';
+            document.getElementById('performancePercentage').textContent = 
+                Math.round(analytics.performance_percentage) + '%';
+
+            // Find best category
+            const skillBreakdown = analytics.skill_breakdown;
+            let bestCategory = 'Technical Knowledge';
+            let bestScore = skillBreakdown.technical_knowledge || 0;
+            Object.entries(skillBreakdown).forEach(([key, value]) => {
+                if (value > bestScore) {
+                    bestScore = value;
+                    bestCategory = key.replace(/_/g, ' ').toUpperCase();
+                }
+            });
+            document.getElementById('bestCategory').textContent = bestCategory;
+
+            // Update evaluation bands
+            document.getElementById('clarityCommunication').style.width = 
+                Math.round(skillBreakdown.communication) + '%';
+            document.getElementById('clarityCommunicationValue').textContent = 
+                Math.round(skillBreakdown.communication) + '%';
+
+            document.getElementById('technicalKnowledge').style.width = 
+                Math.round(skillBreakdown.technical_knowledge) + '%';
+            document.getElementById('technicalKnowledgeValue').textContent = 
+                Math.round(skillBreakdown.technical_knowledge) + '%';
+
+            document.getElementById('problemSolving').style.width = 
+                Math.round(skillBreakdown.problem_solving) + '%';
+            document.getElementById('problemSolvingValue').textContent = 
+                Math.round(skillBreakdown.problem_solving) + '%';
+
+            document.getElementById('depthCompleteness').style.width = 
+                Math.round(skillBreakdown.clarity) + '%';
+            document.getElementById('depthCompletenessValue').textContent = 
+                Math.round(skillBreakdown.clarity) + '%';
+
+            document.getElementById('confidenceLevel').style.width = 
+                Math.round(skillBreakdown.confidence) + '%';
+            document.getElementById('confidenceLevelValue').textContent = 
+                Math.round(skillBreakdown.confidence) + '%';
+
+            // Populate strengths
+            const strengthsList = document.getElementById('strengthsList');
+            strengthsList.innerHTML = '';
+            analytics.strengths.forEach(strength => {
+                const li = document.createElement('li');
+                li.textContent = strength;
+                strengthsList.appendChild(li);
+            });
+
+            // Populate improvements
+            const improvementsList = document.getElementById('improvementsList');
+            improvementsList.innerHTML = '';
+            analytics.weaknesses.forEach(weakness => {
+                const li = document.createElement('li');
+                li.textContent = weakness;
+                improvementsList.appendChild(li);
+            });
+
+            // Populate suggestions
+            const suggestionsContainer = document.getElementById('suggestionsContainer');
+            suggestionsContainer.innerHTML = '';
+            analytics.suggestions.forEach(suggestion => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.textContent = suggestion;
+                suggestionsContainer.appendChild(div);
+            });
+
+            // Initialize charts
+            initializeCharts(skillBreakdown, analytics.score_distribution);
+
+            // Populate transcript
+            populateTranscript(answers);
+        }
+
+        function initializeCharts(skillBreakdown, scoreDistribution) {
+            // Skill Breakdown Chart
+            const skillCtx = document.getElementById('skillChart').getContext('2d');
+            skillChart = new Chart(skillCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Communication', 'Technical', 'Problem Solving', 'Clarity', 'Confidence'],
+                    datasets: [{
+                        label: 'Your Performance',
+                        data: [
+                            skillBreakdown.communication || 0,
+                            skillBreakdown.technical_knowledge || 0,
+                            skillBreakdown.problem_solving || 0,
+                            skillBreakdown.clarity || 0,
+                            skillBreakdown.confidence || 0
+                        ],
+                        borderColor: '#6366F1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#6366F1',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                color: '#94A3B8',
+                                font: { family: "'Inter', sans-serif" }
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Question Performance Chart
+            const questionCtx = document.getElementById('questionChart').getContext('2d');
+            questionChart = new Chart(questionCtx, {
+                type: 'bar',
+                data: {
+                    labels: scoreDistribution.map((_, i) => `Q${i + 1}`),
+                    datasets: [{
+                        label: 'Score',
+                        data: scoreDistribution,
+                        backgroundColor: scoreDistribution.map(score => {
+                            if (score >= 80) return '#6366F1';
+                            if (score >= 60) return '#14B8A6';
+                            return '#F97316';
+                        }),
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                color: '#94A3B8',
+                                font: { family: "'Inter', sans-serif" }
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#94A3B8',
+                                font: { family: "'Inter', sans-serif" }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function populateTranscript(answers) {
+            const transcriptContainer = document.getElementById('transcriptContainer');
+            transcriptContainer.innerHTML = '';
+
+            answers.forEach((answer, index) => {
+                const scoreClass = answer.score >= 80 ? 'excellent' : 
+                                  answer.score >= 60 ? 'good' : 'fair';
+
+                const div = document.createElement('div');
+                div.className = 'transcript-item';
+                div.innerHTML = `
+                    <div class="transcript-header">
+                        <h3>Question ${index + 1}</h3>
+                        <span class="transcript-score ${scoreClass}">${Math.round(answer.score)}%</span>
+                    </div>
+                    <div class="transcript-q-a">
+                        <p class="transcript-question"><strong>Q:</strong> ${answer.question}</p>
+                        <p class="transcript-answer"><strong>A:</strong> ${answer.answer}</p>
+                    </div>
+                    <div class="transcript-feedback">
+                        <p>${answer.feedback}</p>
+                    </div>
+                `;
+                transcriptContainer.appendChild(div);
+            });
+        }
+
+        // Load results on page load
+        loadResults();
+    </script>
+</body>
+</html>

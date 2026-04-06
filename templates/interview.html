@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview - AI Interview Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="interview-body">
+    <div class="interview-container">
+        <!-- Header -->
+        <header class="interview-header">
+            <div class="interview-header-left">
+                <a href="/dashboard" class="btn-back">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    Back
+                </a>
+                <div class="interview-info">
+                    <h1>AI Interview Session</h1>
+                    <p id="questionCounter">Question 1 of ~5</p>
+                </div>
+            </div>
+            <div class="interview-timer" id="timer">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span id="timerValue">00:00</span>
+            </div>
+        </header>
+
+        <!-- Chat Container -->
+        <div class="interview-content">
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be appended here -->
+            </div>
+
+            <!-- Input Area -->
+            <div class="chat-input-area">
+                <div class="input-container">
+                    <textarea id="answerInput" class="answer-input" 
+                              placeholder="Type your answer here... (Shift+Enter to submit)" 
+                              rows="4"></textarea>
+                    <div class="input-actions">
+                        <span class="char-count"><span id="charCount">0</span>/500</span>
+                        <button id="submitBtn" class="btn btn-submit" onclick="submitAnswer()">
+                            <span>Submit Answer</span>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                                <path d="M3.5 10c0-1.8.5-3.4 1.5-4.8M15 5.2c1 1.4 1.5 3 1.5 4.8M10 17V3M3 10h14" stroke-width="1.5"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="interview-progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>AI is evaluating your response...</p>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="modal" style="display: none;">
+        <div class="modal-content feedback-modal">
+            <div class="modal-header">
+                <h2>Answer Evaluation</h2>
+            </div>
+            <div class="modal-body">
+                <div class="score-display">
+                    <div class="score-ring">
+                        <svg viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="54" class="score-ring-bg"/>
+                            <circle cx="60" cy="60" r="54" class="score-ring-fill" id="scoreRingFill"/>
+                        </svg>
+                        <div class="score-text">
+                            <span class="score-value" id="scoreValue">0</span>
+                            <span class="score-label">Score</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feedback-details">
+                    <div class="feedback-item">
+                        <span class="feedback-label">Communication</span>
+                        <div class="feedback-bar">
+                            <div class="feedback-fill" id="clarityFill"></div>
+                        </div>
+                        <span class="feedback-score" id="clarityScore">0%</span>
+                    </div>
+
+                    <div class="feedback-item">
+                        <span class="feedback-label">Technical Knowledge</span>
+                        <div class="feedback-bar">
+                            <div class="feedback-fill" id="technicalFill"></div>
+                        </div>
+                        <span class="feedback-score" id="technicalScore">0%</span>
+                    </div>
+
+                    <div class="feedback-item">
+                        <span class="feedback-label">Problem Solving</span>
+                        <div class="feedback-bar">
+                            <div class="feedback-fill" id="reasoningFill"></div>
+                        </div>
+                        <span class="feedback-score" id="reasoningScore">0%</span>
+                    </div>
+
+                    <div class="feedback-item">
+                        <span class="feedback-label">Confidence</span>
+                        <div class="feedback-bar">
+                            <div class="feedback-fill" id="confidenceFill"></div>
+                        </div>
+                        <span class="feedback-score" id="confidenceScore">0%</span>
+                    </div>
+                </div>
+
+                <div class="feedback-section">
+                    <h4>💡 Feedback</h4>
+                    <p id="feedbackText"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="nextQuestion()">Next Question</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Effects -->
+    <div class="background-grid"></div>
+    <div class="gradient-orb gradient-orb-1"></div>
+    <div class="gradient-orb gradient-orb-2"></div>
+
+    <script>
+        // Interview state
+        const interviewId = {{ interview_id }};
+        let questionCount = 0;
+        let allAnswers = [];
+        let interviewType = '';
+        let currentQuestion = '';
+        let startTime = Date.now();
+        let timerInterval;
+
+        // Initialize interview
+        async function initializeInterview() {
+            const response = await fetch(`/api/interview-results/${interviewId}`);
+            if (response.ok) {
+                const data = await response.json();
+                interviewType = data.interview.interview_type;
+                await loadFirstQuestion();
+            }
+        }
+
+        // Load first question
+        async function loadFirstQuestion() {
+            const response = await fetch('/api/next-question', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    interview_id: interviewId,
+                    question_count: questionCount,
+                    previous_answers: allAnswers,
+                    interview_type: interviewType
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (!data.end_interview) {
+                    currentQuestion = data.question.question;
+                    displayQuestion(data.question);
+                }
+            }
+        }
+
+        // Display question
+        function displayQuestion(question) {
+            const messagesContainer = document.getElementById('chatMessages');
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai-message';
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <p>${question.question}</p>
+                </div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Update progress
+            questionCount++;
+            document.getElementById('questionCounter').textContent = `Question ${questionCount} of ~5`;
+            document.getElementById('progressBar').style.width = `${(questionCount / 7) * 100}%`;
+        }
+
+        // Submit answer
+        async function submitAnswer() {
+            const answerInput = document.getElementById('answerInput');
+            const answer = answerInput.value.trim();
+
+            if (!answer) {
+                answerInput.focus();
+                return;
+            }
+
+            if (answer.length > 500) {
+                alert('Answer too long. Maximum 500 characters.');
+                return;
+            }
+
+            // Display user message
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user-message';
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <p>${answer}</p>
+                </div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+            `;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Clear input
+            answerInput.value = '';
+            document.getElementById('charCount').textContent = '0';
+
+            // Show loading
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            // Submit to backend
+            try {
+                const response = await fetch('/api/submit-answer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        interview_id: interviewId,
+                        question: currentQuestion,
+                        answer: answer,
+                        question_number: questionCount,
+                        interview_type: interviewType
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    allAnswers.push({
+                        score: data.evaluation.overall_score,
+                        ...data.evaluation
+                    });
+
+                    // Show feedback
+                    displayFeedback(data.evaluation);
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    document.getElementById('feedbackModal').style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        // Display feedback
+        function displayFeedback(evaluation) {
+            document.getElementById('scoreValue').textContent = Math.round(evaluation.overall_score);
+            document.getElementById('scoreRingFill').style.strokeDashoffset = 
+                (1 - (evaluation.overall_score / 100)) * 339.29;
+            
+            document.getElementById('clarityScore').textContent = Math.round(evaluation.clarity_score) + '%';
+            document.getElementById('clarityFill').style.width = evaluation.clarity_score + '%';
+            
+            document.getElementById('technicalScore').textContent = Math.round(evaluation.technical_score) + '%';
+            document.getElementById('technicalFill').style.width = evaluation.technical_score + '%';
+            
+            document.getElementById('reasoningScore').textContent = Math.round(evaluation.reasoning_score) + '%';
+            document.getElementById('reasoningFill').style.width = evaluation.reasoning_score + '%';
+            
+            document.getElementById('confidenceScore').textContent = Math.round(evaluation.confidence_score) + '%';
+            document.getElementById('confidenceFill').style.width = evaluation.confidence_score + '%';
+            
+            document.getElementById('feedbackText').textContent = evaluation.feedback;
+        }
+
+        // Next question
+        async function nextQuestion() {
+            document.getElementById('feedbackModal').style.display = 'none';
+
+            // Check if interview should end
+            const avgScore = allAnswers.length > 0 
+                ? allAnswers.reduce((sum, a) => sum + a.score, 0) / allAnswers.length 
+                : 0;
+
+            if (questionCount >= 7 || (questionCount >= 5 && avgScore > 0)) {
+                endInterview();
+                return;
+            }
+
+            // Load next question
+            const response = await fetch('/api/next-question', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    interview_id: interviewId,
+                    question_count: questionCount,
+                    previous_answers: allAnswers,
+                    interview_type: interviewType
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.end_interview) {
+                    endInterview();
+                } else {
+                    currentQuestion = data.question.question;
+                    displayQuestion(data.question);
+                }
+            }
+
+            // Re-focus input
+            document.getElementById('answerInput').focus();
+        }
+
+        // End interview
+        async function endInterview() {
+            const response = await fetch('/api/end-interview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    interview_id: interviewId
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                window.location.href = data.redirect;
+            }
+        }
+
+        // Timer
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timerValue').textContent = 
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // Character counter
+        document.getElementById('answerInput').addEventListener('input', (e) => {
+            document.getElementById('charCount').textContent = e.target.value.length;
+        });
+
+        // Submit on Shift+Enter
+        document.getElementById('answerInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.shiftKey) {
+                e.preventDefault();
+                submitAnswer();
+            }
+        });
+
+        // Initialize
+        initializeInterview();
+        timerInterval = setInterval(updateTimer, 1000);
+    </script>
+</body>
+</html>
