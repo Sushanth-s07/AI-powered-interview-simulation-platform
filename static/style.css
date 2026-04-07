@@ -561,13 +561,13 @@ p {
 }
 
 .sidebar-item.logout {
-    color: #FCA5A5;
+    color: #EF4444;
     border-left-color: transparent;
 }
 
 .sidebar-item.logout:hover {
     background: rgba(239, 68, 68, 0.1);
-    border-left-color: #FCA5A5;
+    border-left-color: #EF4444;
 }
 
 .sidebar.collapsed {
